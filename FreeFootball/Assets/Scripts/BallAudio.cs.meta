@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 0da18980be0744267aa9730163561304
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - suonoCalcio: {fileID: 8300000, guid: 5b5713575ff384921b939eb1a7ea129d, type: 3}
+  - suonoMuro: {instanceID: 0}
+  - suonoTerreno: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
