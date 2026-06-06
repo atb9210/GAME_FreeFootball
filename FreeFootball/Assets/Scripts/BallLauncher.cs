@@ -17,13 +17,11 @@ public class BallLauncher : MonoBehaviour
     public float spinMaxVerticale = 45f;
     public float magnusCoefficient = 0.002f;
 
-    [Header("Dribbling / Tiro (Space)")]
-    [Tooltip("Sotto questa carica (0-1) il tocco è un dribble, sopra è un tiro vero")]
+    [Header("Dribbling")]
+    [Tooltip("Sotto questa intensità (0-1) il tocco è un dribble leggero, sopra è un tiro vero")]
     [Range(0f, 1f)] public float sogliaDribbling = 0.35f;
     [Tooltip("Forza massima del tocco dribbling")]
     public float forzaDribbling = 3.5f;
-    [Tooltip("Secondi per caricare al massimo tenendo Space")]
-    public float tempoCaricaMax = 1.5f;
 
     [Header("Reset / Sblocco")]
     [Tooltip("Click destro per resettare. Controllo torna automaticamente sotto questa velocità (m/s)")]
@@ -37,12 +35,7 @@ public class BallLauncher : MonoBehaviour
     private Vector3 posizioneIniziale;
     private Vector3 puntoPressione;
     private Vector3 offsetColpo;
-    private bool trascinando = false;   // mouse tenuto premuto sulla palla
-    private bool inAiming = false;      // mira attiva (mouse giù, in attesa di Space)
-    private Vector3 vettoreAim;         // direzione mira dal drag mouse
-    private float spaceCharge = 0f;     // 0..1 carica Space corrente
-    private bool spaceCharging = false; // Space è tenuto premuto
-
+    private bool trascinando = false;
     private bool lanciata = false;
     private Camera camPrincipale;
     private float timerLog = 0f;
@@ -62,7 +55,7 @@ public class BallLauncher : MonoBehaviour
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         rb.maxAngularVelocity = 65f; // cap fisico Unity: impedisce spin folli da rimbalzo
 
-        playerController = FindObjectOfType<PlayerController>();
+        playerController = FindAnyObjectByType<PlayerController>();
         ImpostaFisicaPallone();
         CreaIndicatore();
     }
@@ -85,7 +78,6 @@ public class BallLauncher : MonoBehaviour
         transform.rotation = Quaternion.identity;
         lanciata     = false;
         timerSblocco = 0f;
-        Debug.Log("[PALLA] Reset partita");
     }
 
     void FixedUpdate()
@@ -99,17 +91,8 @@ public class BallLauncher : MonoBehaviour
 
         float speed = rb.linearVelocity.magnitude;
 
-        // Log ogni 0.2 secondi mentre la palla e in volo
         timerLog += Time.fixedDeltaTime;
-        if (timerLog >= 0.2f)
-        {
-            timerLog = 0f;
-            Vector3 magnus = magnusCoefficient * Vector3.Cross(rb.angularVelocity, rb.linearVelocity);
-            Debug.Log($"[PALLA] speed={speed:F2} m/s ({speed * 3.6f:F1} km/h) | " +
-                      $"velY={rb.linearVelocity.y:F2} m/s | " +
-                      $"spinX={rb.angularVelocity.x:F1} spinY={rb.angularVelocity.y:F1} spinZ={rb.angularVelocity.z:F1} | " +
-                      $"Magnus={magnus.magnitude:F3} N");
-        }
+        if (timerLog >= 0.2f) timerLog = 0f; // log disabilitato
 
         if (rb.angularVelocity.magnitude > 65f)
             rb.angularVelocity = rb.angularVelocity.normalized * 65f;
@@ -154,35 +137,6 @@ public class BallLauncher : MonoBehaviour
         lineIndicatore.endColor = Color.red;
     }
 
-    // ── SPACE: carica tiro in qualsiasi momento (mouse libero) ──────────────────
-    void Update()
-    {
-        if (lanciata) return;
-        if (playerController != null && !playerController.InBallControlMode) return;
-        if (trascinando) return; // il tocco mouse ha priorità
-
-        if (Keyboard.current.spaceKey.isPressed)
-        {
-            spaceCharging = true;
-            inAiming      = true;
-            spaceCharge   = Mathf.Min(spaceCharge + Time.deltaTime / tempoCaricaMax, 1f);
-
-            // Direzione e contatto calcolati dal mouse in tempo reale (anche in movimento)
-            vettoreAim  = OttieniPosizioneMouseSulPiano() - transform.position;
-            offsetColpo = CalcolaContactPointDaMouse();
-            AggiornaFreccia();
-        }
-        else if (spaceCharging)
-        {
-            EseguiTiro();
-        }
-        else if (inAiming)
-        {
-            CancellaAim();
-        }
-    }
-
-    // ── MOUSE: tocco / dribble ───────────────────────────────────────────────
     void OnMouseDown()
     {
         if (lanciata) return;
@@ -190,6 +144,13 @@ public class BallLauncher : MonoBehaviour
 
         trascinando    = true;
         puntoPressione = OttieniPosizioneMouseSulPiano();
+
+        Ray ray = camPrincipale.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (Physics.Raycast(ray, out RaycastHit hit) && hit.collider.gameObject == gameObject)
+            offsetColpo = hit.point - transform.position;
+        else
+            offsetColpo = Vector3.zero;
+
         rb.isKinematic = true;
     }
 
@@ -198,7 +159,6 @@ public class BallLauncher : MonoBehaviour
         if (!trascinando) return;
         Vector3 vettore = OttieniPosizioneMouseSulPiano() - puntoPressione;
         vettore = Vector3.ClampMagnitude(vettore, distanzaMassimaTrascinamento);
-        // Freccia leggera per il dribble (gialla, corta)
         lineIndicatore.enabled = true;
         lineIndicatore.SetPosition(0, transform.position + Vector3.up * 0.05f);
         lineIndicatore.SetPosition(1, transform.position + Vector3.up * 0.05f + vettore);
@@ -209,60 +169,15 @@ public class BallLauncher : MonoBehaviour
         if (!trascinando) return;
         trascinando            = false;
         lineIndicatore.enabled = false;
-        rb.isKinematic         = false;
 
         Vector3 vettore = OttieniPosizioneMouseSulPiano() - puntoPressione;
         vettore = Vector3.ClampMagnitude(vettore, distanzaMassimaTrascinamento);
-        if (vettore.magnitude < 0.05f) return;
 
-        // Tocco leggero: forza proporzionale al drag, sempre un dribble (mai tiro)
-        float distNorm   = Mathf.Clamp01(vettore.magnitude / distanzaMassimaTrascinamento);
-        Vector3 dir      = new Vector3(vettore.x, 0f, vettore.z).normalized;
-        float forzaTocco = forzaDribbling * distNorm;
-        rb.AddForce(dir * forzaTocco, ForceMode.Impulse);
-        ballAudio?.SuonaCalcio(distNorm * 0.4f);
-        Debug.Log($"[DRIBBLE] dir={dir} | forza={forzaTocco:F2} N*s");
-    }
+        if (vettore.magnitude < 0.1f) { rb.isKinematic = false; return; }
 
-    // ── Helpers Space-shot ───────────────────────────────────────────────────
-    void AggiornaFreccia()
-    {
-        if (vettoreAim.magnitude < 0.05f) { lineIndicatore.enabled = false; return; }
-        float lunghezza = Mathf.Max(0.3f, distanzaMassimaTrascinamento * spaceCharge);
-        lineIndicatore.enabled = true;
-        lineIndicatore.SetPosition(0, transform.position + Vector3.up * 0.05f);
-        lineIndicatore.SetPosition(1, transform.position + Vector3.up * 0.05f + vettoreAim.normalized * lunghezza);
-    }
-
-    // Calcola il punto di contatto sulla palla dalla posizione dello schermo del mouse
-    Vector3 CalcolaContactPointDaMouse()
-    {
-        float raggio = 0.11f;
-        Vector3 ballScreen  = camPrincipale.WorldToScreenPoint(transform.position);
-        Vector2 mouseScreen = Mouse.current.position.ReadValue();
-        Vector2 diff        = mouseScreen - new Vector2(ballScreen.x, ballScreen.y);
-
-        // Raggio palla in pixel sullo schermo
-        Vector3 edgeScreen = camPrincipale.WorldToScreenPoint(
-            transform.position + camPrincipale.transform.right * raggio);
-        float radiusPx = Vector2.Distance(
-            new Vector2(edgeScreen.x, edgeScreen.y),
-            new Vector2(ballScreen.x,  ballScreen.y));
-        if (radiusPx < 1f) radiusPx = 50f;
-
-        float normX = Mathf.Clamp(diff.x / radiusPx, -1f, 1f); // sinistra/destra → curva
-        float normY = Mathf.Clamp(diff.y / radiusPx, -1f, 1f); // su/giù → angolo
-        return new Vector3(normX * raggio, normY * raggio, 0f);
-    }
-
-    void EseguiTiro()
-    {
-        float intensita = spaceCharge;
+        float intensita = vettore.magnitude / distanzaMassimaTrascinamento;
         bool  interno   = Keyboard.current.leftShiftKey.isPressed;
         float potenza   = interno ? 0.82f : 1f;
-        CancellaAim();
-
-        if (vettoreAim.magnitude < 0.05f || intensita < 0.02f) return;
 
         float raggio      = 0.11f;
         float offsetYNorm = Mathf.Clamp(offsetColpo.y / raggio, -1f, 1f);
@@ -270,25 +185,29 @@ public class BallLauncher : MonoBehaviour
         if (interno) angoloGradi = Mathf.Max(angoloGradi, 20f);
         float angoloRad = angoloGradi * Mathf.Deg2Rad;
 
-        Vector3 dirOrizz  = new Vector3(vettoreAim.x, 0f, vettoreAim.z).normalized;
+        Vector3 dirOrizz  = new Vector3(vettore.x, 0f, vettore.z).normalized;
         Vector3 direzione = Mathf.Cos(angoloRad) * dirOrizz + Mathf.Sin(angoloRad) * Vector3.up;
 
-        transform.position += Vector3.up * 0.015f;
-        rb.AddForce(direzione * forceMassima * intensita * potenza, ForceMode.Impulse);
-        ballAudio?.SuonaCalcio(intensita);
-        ApplicaSpin(interno, intensita);
-        timerLog = 0f;
-        Debug.Log($"[LANCIO] carica={intensita:F2} | angolo={angoloGradi:F1}° | forza={forceMassima*intensita*potenza:F2} N*s");
-        lanciata     = true;
-        timerSblocco = 0.5f;
-    }
+        rb.isKinematic = false;
 
-    void CancellaAim()
-    {
-        inAiming      = false;
-        spaceCharge   = 0f;
-        spaceCharging = false;
-        lineIndicatore.enabled = false;
+        if (intensita < sogliaDribbling)
+        {
+            float forzaTocco = forzaDribbling * intensita / sogliaDribbling;
+            rb.AddForce(dirOrizz * forzaTocco, ForceMode.Impulse);
+            ballAudio?.SuonaCalcio(intensita * 0.4f);
+            Debug.Log($"[DRIBBLE] intensita={intensita:F2} | forza={forzaTocco:F2} N*s");
+        }
+        else
+        {
+            transform.position += Vector3.up * 0.015f;
+            rb.AddForce(direzione * forceMassima * intensita * potenza, ForceMode.Impulse);
+            ballAudio?.SuonaCalcio(intensita);
+            ApplicaSpin(interno, intensita);
+            timerLog = 0f;
+            Debug.Log($"[LANCIO] intensita={intensita:F2} | tipo={(interno?"INTERNO":"COLLO")} | angolo={angoloGradi:F1}° | forza={forceMassima*intensita*potenza:F2} N*s");
+            lanciata     = true;
+            timerSblocco = 0.5f;
+        }
     }
 
     void ApplicaSpin(bool interno, float intensita)

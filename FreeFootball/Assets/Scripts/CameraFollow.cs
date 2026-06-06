@@ -20,12 +20,11 @@ public class CameraFollow : MonoBehaviour
         if (GetComponent<PlayerController>() != null)
         {
             enabled = false;
-            Debug.Log("[CameraFollow] Disabilitato — PlayerController attivo sulla stessa camera");
             return;
         }
         if (target == null) return;
         if (ballLauncher == null)
-            ballLauncher = FindObjectOfType<BallLauncher>();
+            ballLauncher = FindAnyObjectByType<BallLauncher>();
         offset = transform.position - target.position;
         Debug.Log($"[CameraFollow] Offset calcolato dalla camera: {offset}");
     }

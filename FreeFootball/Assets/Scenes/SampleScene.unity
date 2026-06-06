@@ -131,6 +131,8 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -256,6 +258,39 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc652488be9964447a2d590271db0644, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
+  target: {fileID: 604719565}
+  ballLauncher: {fileID: 0}
+  smoothSpeed: 6
+--- !u!114 &330585549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da86725721ccd4462b4e7c9d5e3acb25, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
+  palla: {fileID: 0}
+  velocita: 5
+  sensibilita: 0.18
+  pitchMax: 80
+  distanzaControllo: 3
+  forzaWASDSuPalla: 2
 --- !u!1 &402141572
 GameObject:
   m_ObjectHideFlags: 0
@@ -558,7 +593,9 @@ MonoBehaviour:
   spinMaxInterno: 60
   spinMaxVerticale: 45
   magnusCoefficient: 0.02
-  tempoReset: 4
+  sogliaDribbling: 0.35
+  forzaDribbling: 3.5
+  velocitaSblocco: 0.8
 --- !u!54 &604719561
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -979,6 +1016,73 @@ MonoBehaviour:
   frizione: 0.5
   frizioneStatica: 0.55
   combineFrizione: 0
+--- !u!1 &1054543495
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1054543497}
+  - component: {fileID: 1054543496}
+  - component: {fileID: 1054543498}
+  m_Layer: 0
+  m_Name: Campetto
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1054543496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1054543495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 228d11bfda0f2420597a5427abf3f2e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CampettoBuilder
+  lunghezza: 25
+  larghezza: 15
+  altezzaMuro: 3.5
+  spessoreMuro: 0.25
+  materialeMuro: {fileID: 2100000, guid: ed22a47bae6eb4918af6cef673139fb5, type: 2}
+  tilingX: 0.5
+  tilingY: 0.8
+--- !u!4 &1054543497
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1054543495}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.30827, y: 3.59373, z: 0.24328}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1054543498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1054543495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc652488be9964447a2d590271db0644, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
+  target: {fileID: 0}
+  ballLauncher: {fileID: 0}
+  smoothSpeed: 6
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -989,3 +1093,4 @@ SceneRoots:
   - {fileID: 402141576}
   - {fileID: 977558819}
   - {fileID: 604719565}
+  - {fileID: 1054543497}

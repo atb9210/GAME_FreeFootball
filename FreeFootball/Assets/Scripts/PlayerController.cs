@@ -27,7 +27,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        ballLauncher = FindObjectOfType<BallLauncher>();
+        ballLauncher = FindAnyObjectByType<BallLauncher>();
         if (palla == null && ballLauncher != null)
             palla = ballLauncher.transform;
 
@@ -97,7 +97,5 @@ public class PlayerController : MonoBehaviour
         Vector2 ball = new Vector2(palla.position.x,     palla.position.z);
         bool era = InBallControlMode;
         InBallControlMode = Vector2.Distance(me, ball) <= distanzaControllo;
-        if (InBallControlMode != era)
-            Debug.Log(InBallControlMode ? "[PLAYER] Ball Control ON" : "[PLAYER] Free Movement");
     }
 }
