@@ -1,0 +1,22 @@
+# Unity generated
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+MemoryCaptures/
+Recordings/
+
+# Build output
+Build/
+Builds/
+
+# VS / Rider
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.slnx
+
+# macOS
+.DS_Store
